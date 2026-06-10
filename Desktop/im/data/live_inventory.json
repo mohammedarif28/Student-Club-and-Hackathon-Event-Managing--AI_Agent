@@ -1,0 +1,56 @@
+[
+  {
+    "asset_tag": "SVR001",
+    "hostname": "web-prod-01",
+    "owner": "engineering",
+    "environment": "production",
+    "cpu": 4,
+    "ram": 16,
+    "storage": 100
+  },
+  {
+    "asset_tag": "SVR002",
+    "hostname": "db-prod-02",
+    "owner": "finance",
+    "environment": "production",
+    "cpu": 8,
+    "ram": 32,
+    "storage": 500
+  },
+  {
+    "asset_tag": "SVR003",
+    "hostname": "cache-prod-03",
+    "owner": "engineering",
+    "environment": "production",
+    "cpu": 2,
+    "ram": 8,
+    "storage": 50
+  },
+  {
+    "asset_tag": "SVR004",
+    "hostname": "web-stage-01",
+    "owner": "engineering",
+    "environment": "staging",
+    "cpu": 2,
+    "ram": 8,
+    "storage": 50
+  },
+  {
+    "asset_tag": "SVR006",
+    "hostname": "unauthorized-dev-test",
+    "owner": "unknown",
+    "environment": "development",
+    "cpu": 4,
+    "ram": 16,
+    "storage": 200
+  },
+  {
+    "asset_tag": "SVR007",
+    "hostname": "backup-prod-01",
+    "owner": "it-ops",
+    "environment": "production",
+    "cpu": 4,
+    "ram": 32,
+    "storage": 1000
+  }
+]

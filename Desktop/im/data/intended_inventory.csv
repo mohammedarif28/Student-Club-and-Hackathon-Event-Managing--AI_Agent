@@ -1,0 +1,7 @@
+asset_tag,hostname,owner,environment,cpu,ram,storage
+SVR001,web-prod-01,engineering,production,4,16,100
+SVR002,db-prod-02,security,production,8,32,500
+SVR003,cache-prod-03,engineering,production,2,8,50
+SVR004,web-stage-01,engineering,production,2,8,50
+SVR005,app-dev-01,marketing,development,1,4,20
+SVR007,backup-prod-01,it-ops,production,2,16,500
