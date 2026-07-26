@@ -14,15 +14,15 @@ def get_campus_event_tool(query: str):
 
 class CampusEventsAgent:
     def __init__(self):
-        llm = ChatGroq(
+        self.llm = ChatGroq(
             model="llama-3.1-8b-instant",
             temperature=0.2,
-            api_key=os.getenv("GROQ_API_KEY") 
+            api_key=os.getenv("GROQ_API_KEY")
         )
 
         self.tools_list = [get_campus_event_tool]
         self.tools_by_names = {t.name: t for t in self.tools_list}
-        self.llm_with_tools = llm.bind_tools(self.tools_list)
+        self.llm_with_tools = self.llm.bind_tools(self.tools_list)
 
     def agent_node(self, state: dict) -> dict:
         messages = state["messages"]

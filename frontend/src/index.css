@@ -1,0 +1,244 @@
+/* ==========================================================================
+   Gemini AI Agent Core Design System & Theme Tokens
+   ========================================================================== */
+
+:root {
+  /* Fonts */
+  --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Gemini Accent Gradients */
+  --gemini-gradient-text: linear-gradient(135deg, #4285F4 0%, #9B51E0 50%, #D9657B 100%);
+  --gemini-gradient-btn: linear-gradient(135deg, #1A73E8 0%, #7B1FA2 60%, #C2185B 100%);
+  --gemini-gradient-btn-hover: linear-gradient(135deg, #185ABC 0%, #6A1B9A 60%, #AD1457 100%);
+  --gemini-gradient-glow: radial-gradient(circle at 50% 0%, rgba(66, 133, 244, 0.18) 0%, rgba(155, 81, 224, 0.12) 40%, rgba(0, 0, 0, 0) 70%);
+}
+
+/* Dark Theme (Default Gemini Aesthetic) */
+body.dark-theme {
+  --bg-app: #0e0e11;
+  --bg-sidebar: #131318;
+  --bg-card: #1e1f26;
+  --bg-card-hover: #262833;
+  --bg-chat-user: #282a36;
+  --bg-chat-ai: #181920;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-highlight: rgba(123, 31, 162, 0.35);
+
+  --text-primary: #e3e3e8;
+  --text-secondary: #9da1b4;
+  --text-muted: #64687a;
+  
+  --accent-blue: #4285F4;
+  --accent-purple: #a855f7;
+  --accent-pink: #ec4899;
+  --accent-green: #10b981;
+  --accent-amber: #f59e0b;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 24px rgba(66, 133, 244, 0.25);
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+/* Light Theme Options */
+body.light-theme {
+  --bg-app: #f8fafd;
+  --bg-sidebar: #f0f4f9;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  --bg-chat-user: #e2e8f0;
+  --bg-chat-ai: #ffffff;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-highlight: rgba(66, 133, 244, 0.4);
+
+  --text-primary: #1f1f23;
+  --text-secondary: #4b5563;
+  --text-muted: #9ca3af;
+  
+  --accent-blue: #1a73e8;
+  --accent-purple: #9333ea;
+  --accent-pink: #db2777;
+  --accent-green: #059669;
+  --accent-amber: #d97706;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --shadow-glow: 0 0 24px rgba(26, 115, 232, 0.15);
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+/* General Resets */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.25);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.4);
+}
+
+/* Layout Grid */
+.app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background-image: var(--gemini-gradient-glow);
+  background-repeat: no-repeat;
+  background-position: top center;
+  background-size: 100% 600px;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Gemini Shimmer Text */
+.gemini-gradient-text {
+  background: var(--gemini-gradient-text);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Prominent Execute Button */
+.execute-btn-lg {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 36px;
+  border-radius: 99px;
+  background: var(--gemini-gradient-btn);
+  color: #ffffff;
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(26, 115, 232, 0.4);
+  transition: var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.execute-btn-lg:hover {
+  background: var(--gemini-gradient-btn-hover);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 32px rgba(123, 31, 162, 0.5);
+}
+
+.execute-btn-lg:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.execute-btn-lg:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.sparkle-icon-animated {
+  animation: sparkleSpin 4s infinite linear;
+}
+
+@keyframes sparkleSpin {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.15); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+/* Pulse Glow Animation */
+.pulse-glow {
+  animation: pulseGlow 2s infinite ease-in-out;
+}
+
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 15px rgba(66, 133, 244, 0.3); }
+  50% { box-shadow: 0 0 30px rgba(168, 85, 247, 0.6); }
+  100% { box-shadow: 0 0 15px rgba(66, 133, 244, 0.3); }
+}
+
+/* Markdown Styling */
+.markdown-body {
+  line-height: 1.7;
+  color: var(--text-primary);
+  font-size: 0.98rem;
+}
+.markdown-body p {
+  margin-bottom: 1rem;
+}
+.markdown-body h1, .markdown-body h2, .markdown-body h3 {
+  font-family: var(--font-heading);
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+  color: var(--text-primary);
+}
+.markdown-body ul, .markdown-body ol {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+.markdown-body li {
+  margin-bottom: 0.35rem;
+}
+.markdown-body code {
+  background: rgba(127, 127, 127, 0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+.markdown-body pre {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 14px 18px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-color);
+}
+
+/* Card Glassmorphism */
+.glass-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(12px);
+  transition: var(--transition-normal);
+}
