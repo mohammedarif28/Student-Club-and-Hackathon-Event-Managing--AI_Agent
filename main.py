@@ -1,74 +1,45 @@
-import os
-from dotenv import load_dotenv
-from langchain_community.document_loaders import PyPDFLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain_classic.vectorstores import Chroma
-from langchain_groq import ChatGroq
-from langchain_classic.chains import RetrievalQA
-class LocalRAGSystem:
-    def __init__(self):
-        print("Initializing RAG System...")
-        load_dotenv()  
-        self.gemini_api_key = os.getenv("GEMINI_API_KEY")
-        self.groq_api_key = os.getenv("GROQ_API_KEY")
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import Optional
+from langchain_core.messages import HumanMessage
+from App.workflows.workflow import workflow
 
-        if not self.gemini_api_key or not self.groq_api_key:
-            raise ValueError("Missing API Keys in .env  file")
-        print("API Keys loaded successfully.")
-
-        self.splits = None
-        self.vector_store = None
-    def ingest_document(self, file_path):
-        print(f"Loading document from {file_path}")
-        loader = PyPDFLoader(file_path)
-        doc = loader.load()
-
-        print("Splitting document")
-        splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=200)
-        self.splits = splitter.split_documents(doc)
-        print(f"Split into {len(self.splits)} chunks")
-
-    def setup_database(self):
-        if not self.splits:
-            raise ValueError("No document splits available. Please ingest a document first.")
-
-        print("inittializing embeddings and  chroma databae")
-        embeddings = GoogleGenerativeAIEmbeddings(
-            model = "models/gemini-embedding-001",
-            google_api_key=self.gemini_api_key)
-        self.vector_store = Chroma(
-            embedding_function=embeddings,
-            persist_directory="./chroma_db",
-            collection_name="EXCEL_Campus_Rules_docs"
-        )
-        self.vector_store.add_documents(self.splits)
-        self.retriever = self.vector_store.as_retriever(search_kwargs={"k": 2})
-
-    def setup_llm_chain(self):
-        print("iniitializing groq llm")
-        llm = ChatGroq(
-            model="openai/gpt-oss-20b",
-            api_key=self.groq_api_key,
-            temperature=0.3,
-        )
-        self.qa_chain = RetrievalQA.from_chain_type(
-            llm=llm,
-            retriever=self.retriever,
-            return_source_documents=True
-        )
-        print("pipeline is ready")
-        
-    def ask(self, query):
-        print(f"\n Asking: {query}")
-        response =self .qa_chain.invoke({"query": query})
-        print(f"Answer: {response['result']}\n")
+app = FastAPI(
+    title="Interactive Campus Info AI Agent",
+    version="0.1.0",
+    description="API to query campus rules, events, and institutional details using a multi-agent system"
+)
 
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-if __name__ == "__main__":
-    rag = LocalRAGSystem()        
-    rag.ingest_document("./EXCEL COLLEGE CAMPUS RULES.pdf")
-    rag.setup_database()
-    rag.setup_llm_chain()
-    rag.ask("WHERE IS THE PLACEMENT CELL?")
+@app.get("/")
+def root() -> dict:
+    return {"message": "The Interactive Campus Info AI Agent API is live. Access docs at http://127.0.0.1:8000/docs"}
+
+@app.get("/health")
+def health_check() -> dict:
+    return {"status": "OK"}
+
+class WorkflowPayload(BaseModel):
+    query: Optional[str] = None
+    message: Optional[str] = None
+
+@app.post("/api/chat")
+@app.post("/execute-workflow")
+def process_workflow(payload: Optional[WorkflowPayload] = None, query: Optional[str] = None) -> dict:
+    active_query = (payload.query if payload and payload.query else None) or (payload.message if payload and payload.message else None) or query or "What are the rules for exam attendance and where is the placement cell?"
+    try:
+        inputs = {"messages": [HumanMessage(content=active_query)]}
+        output = workflow.invoke(inputs)
+        final_response = output["messages"][-1].content
+        return {"status": "success", "result": final_response, "query": active_query}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

@@ -1,282 +1,129 @@
-import React, { useState, useEffect } from 'react';
-import Header from './components/Header';
-import Sidebar from './components/Sidebar';
-import HeroSection from './components/HeroSection';
-import ChatContainer from './components/ChatContainer';
-import { Play, Sparkles, Compass, ShieldCheck, Users, Info } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
+import './index.css';
 
-const PRESETS = [
-  {
-    id: 'rules-placement',
-    title: 'Exam Rules & Placement Cell',
-    category: 'Institutional Guidelines',
-    query: 'What are the rules for exam attendance and where is the placement cell?',
-    icon: '📜'
-  },
-  {
-    id: 'events-clubs',
-    title: 'Clubs & Upcoming Fests',
-    category: 'Campus Activities',
-    query: 'What are the active campus clubs and upcoming tech fest events?',
-    icon: '🎉'
-  },
-  {
-    id: 'general-info',
-    title: 'General Campus Facilities',
-    category: 'Campus Info',
-    query: 'Where is the library, central canteen, and administrative block located?',
-    icon: '🏫'
-  }
-];
+function App() {
+  const [messages, setMessages] = useState([
+    { role: 'assistant', content: "Hello! I'm your Campus Info AI. How can I help you today?" }
+  ]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef(null);
 
-export default function App() {
-  const [theme, setTheme] = useState('dark');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [selectedPreset, setSelectedPreset] = useState(PRESETS[0]);
-  const [isBackendConnected, setIsBackendConnected] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentExecution, setCurrentExecution] = useState(null);
-  const [history, setHistory] = useState([]);
-  const [activeHistoryId, setActiveHistoryId] = useState(null);
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
-  // Check backend health on mount and periodically
   useEffect(() => {
-    const checkHealth = async () => {
-      try {
-        const res = await fetch('http://127.0.0.1:8000/health');
-        if (res.ok) {
-          setIsBackendConnected(true);
-        } else {
-          setIsBackendConnected(false);
-        }
-      } catch (err) {
-        setIsBackendConnected(false);
-      }
-    };
-    checkHealth();
-    const interval = setInterval(checkHealth, 10000);
-    return () => clearInterval(interval);
-  }, []);
+    scrollToBottom();
+  }, [messages, loading]);
 
-  // Update theme on body
-  useEffect(() => {
-    document.body.className = `${theme}-theme`;
-  }, [theme]);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!input.trim() || loading) return;
 
-  // Execute Workflow Trigger
-  const handleExecuteWorkflow = async () => {
-    const startTime = Date.now();
-    const executionId = `exec-${Date.now()}`;
-    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const userMessage = input.trim();
+    setInput('');
 
-    setIsLoading(true);
-    setCurrentExecution(null);
-    setActiveHistoryId(executionId);
-
-    const historyItem = {
-      id: executionId,
-      title: selectedPreset.title,
-      query: selectedPreset.query,
-      timestamp,
-      status: 'loading'
-    };
-
-    setHistory((prev) => [historyItem, ...prev]);
+    setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
+    setLoading(true);
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/execute-workflow', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ query: selectedPreset.query })
+      const response = await axios.post('http://127.0.0.1:8000/api/chat', {
+        message: userMessage
       });
 
-      const data = await response.json();
-      const durationSeconds = ((Date.now() - startTime) / 1000).toFixed(2);
+      const botReply = response.data.result || response.data.reply || response.data.response || 'No response received.';
 
-      if (response.ok && data.status === 'success') {
-        const resultObj = {
-          id: executionId,
-          query: data.query || selectedPreset.query,
-          result: data.result,
-          status: 'success',
-          executionTime: `${durationSeconds}s`,
-          timestamp
-        };
-
-        setCurrentExecution(resultObj);
-        setHistory((prev) =>
-          prev.map((item) => (item.id === executionId ? { ...item, status: 'success' } : item))
-        );
-      } else {
-        throw new Error(data.message || 'Execution error returned by backend.');
-      }
+      setMessages((prev) => [...prev, { role: 'assistant', content: botReply }]);
     } catch (error) {
-      console.error('Workflow Execution Failed:', error);
-      const errorObj = {
-        id: executionId,
-        query: selectedPreset.query,
-        status: 'error',
-        message: error.message || 'Failed to connect to FastAPI backend at http://127.0.0.1:8000/execute-workflow',
-        timestamp
-      };
-
-      setCurrentExecution(errorObj);
-      setHistory((prev) =>
-        prev.map((item) => (item.id === executionId ? { ...item, status: 'error' } : item))
-      );
+      console.error('Error communicating with backend:', error);
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: 'Error: Could not connect to the backend server.' }
+      ]);
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleNewExecution = () => {
-    setCurrentExecution(null);
-    setActiveHistoryId(null);
-  };
-
-  const handleSelectHistoryItem = (item) => {
-    setActiveHistoryId(item.id);
-    if (item.id === currentExecution?.id) return;
-    // Find matching full current execution or rebuild preview
-    if (item.status === 'success' || item.status === 'error') {
-      setCurrentExecution({
-        id: item.id,
-        query: item.query,
-        result: item.result || 'Execution completed.',
-        status: item.status,
-        executionTime: item.executionTime || '1.0s',
-        timestamp: item.timestamp
-      });
+      setLoading(false);
     }
   };
 
   return (
-    <div className="app-container">
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onNewExecution={handleNewExecution}
-        history={history}
-        activeHistoryId={activeHistoryId}
-        onSelectHistoryItem={handleSelectHistoryItem}
-        presets={PRESETS}
-        selectedPreset={selectedPreset}
-        onSelectPreset={setSelectedPreset}
-        onCloseSidebar={() => setIsSidebarOpen(false)}
-      />
+    <div className="gemini-app-layout">
+      {/* Sidebar (Gemini Style) */}
+      <aside className="gemini-sidebar">
+        <div className="sidebar-header">
+          <button className="new-chat-btn" onClick={() => setMessages([{ role: 'assistant', content: "New chat started. What's on your mind?" }])}>
+            <span>+</span> New Chat
+          </button>
+        </div>
+        <div className="sidebar-history">
+          <div className="history-title">Recent</div>
+          <div className="history-item active">Campus Info Session</div>
+        </div>
+        <div className="sidebar-footer">
+          <div className="user-profile">
+            <div className="avatar-circle">M</div>
+            <span>Mohammed</span>
+          </div>
+        </div>
+      </aside>
 
-      <div className="main-content">
-        <Header
-          theme={theme}
-          setTheme={setTheme}
-          isBackendConnected={isBackendConnected}
-          toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-          activeQuery={selectedPreset.query}
-        />
+      {/* Main Chat Area */}
+      <main className="gemini-main">
+        <header className="gemini-topbar">
+          <h2>Campus AI <span className="sparkle-badge">Campus Agent</span></h2>
+        </header>
 
-        <main className="content-scrollable">
-          {/* Top Sticky Bar when Result or Thinking is active */}
-          {(currentExecution || isLoading) && (
-            <div className="top-action-bar">
-              <div className="bar-left">
-                <Sparkles size={16} className="text-purple" />
-                <span className="bar-title">{selectedPreset.title}</span>
+        <div className="gemini-chat-viewport">
+          <div className="messages-scroll-area">
+            {messages.map((msg, index) => (
+              <div key={index} className={`gemini-message-row ${msg.role}`}>
+                <div className="message-content-wrapper">
+                  <div className="sender-indicator">
+                    {msg.role === 'assistant' ? '🌙' : 'You'}
+                  </div>
+                  <div className="message-text">
+                    {msg.content}
+                  </div>
+                </div>
               </div>
-              <button 
-                className="execute-btn-sm"
-                onClick={handleExecuteWorkflow}
-                disabled={isLoading}
-              >
-                <Play size={15} fill="currentColor" />
-                <span>{isLoading ? 'Running...' : 'Execute Workflow'}</span>
+            ))}
+            {loading && (
+              <div className="gemini-message-row assistant">
+                <div className="message-content-wrapper">
+                  <div className="sender-indicator">✦</div>
+                  <div className="message-text thinking-animation">
+                    <span>.</span><span>.</span><span>.</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Floating Input Box */}
+          <div className="gemini-input-container">
+            <form onSubmit={handleSubmit} className="gemini-form">
+              <input
+                type="text"
+                className="gemini-text-input"
+                placeholder="Ask Campus AI anything..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+              />
+              <button type="submit" className="gemini-send-btn" disabled={!input.trim() || loading}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="19" x2="12" y2="5"></line>
+                  <polyline points="5 12 12 5 19 12"></polyline>
+                </svg>
               </button>
-            </div>
-          )}
-
-          {/* Hero View when Idle */}
-          {!currentExecution && !isLoading && (
-            <HeroSection
-              onExecute={handleExecuteWorkflow}
-              isLoading={isLoading}
-              selectedPreset={selectedPreset}
-              presets={PRESETS}
-              onSelectPreset={setSelectedPreset}
-            />
-          )}
-
-          {/* Chat Container View when Execution active or in progress */}
-          {(currentExecution || isLoading) && (
-            <ChatContainer
-              currentExecution={currentExecution}
-              onExecute={handleExecuteWorkflow}
-              isLoading={isLoading}
-            />
-          )}
-        </main>
-      </div>
-
-      <style>{`
-        .content-scrollable {
-          flex: 1;
-          overflow-y: auto;
-          position: relative;
-          padding-bottom: 40px;
-        }
-
-        .top-action-bar {
-          position: sticky;
-          top: 0;
-          z-index: 5;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 12px 24px;
-          background: rgba(14, 14, 17, 0.85);
-          backdrop-filter: blur(12px);
-          border-bottom: 1px solid var(--border-color);
-        }
-
-        .bar-left {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .bar-title {
-          font-family: var(--font-heading);
-          font-weight: 600;
-          font-size: 0.95rem;
-          color: var(--text-primary);
-        }
-
-        .execute-btn-sm {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 8px 20px;
-          border-radius: 99px;
-          background: var(--gemini-gradient-btn);
-          color: #fff;
-          font-family: var(--font-heading);
-          font-weight: 600;
-          font-size: 0.88rem;
-          border: none;
-          cursor: pointer;
-          transition: var(--transition-fast);
-          box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
-        }
-
-        .execute-btn-sm:hover {
-          background: var(--gemini-gradient-btn-hover);
-          transform: translateY(-1px);
-        }
-
-        .execute-btn-sm:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-      `}</style>
+            </form>
+            <div className="disclaimer-text">AI may display inaccurate info about campus events or regulations.</div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
+
+export default App;

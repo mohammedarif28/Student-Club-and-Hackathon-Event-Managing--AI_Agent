@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 from langchain_core.messages import HumanMessage
-from App.workflows.workflow import workflow
+from langchain_community.vectorstores import Chroma
 
 app = FastAPI(
     title="Interactive Campus Info AI Agent",
@@ -72,18 +72,21 @@ def delete_all_item() -> dict:
     return {"message": "All items have been deleted from the database"}
 
 # -----------------------------------------------------
-# Multi-Agent Workflow Execution Endpoint
+# Multi-Agent Workflow & Interactive Chat Execution Endpoint
 # -----------------------------------------------------
 
 class WorkflowPayload(BaseModel):
     query: Optional[str] = None
+    message: Optional[str] = None
 
+@app.post("/api/chat")
 @app.post("/execute-workflow")
 def process_workflow(payload: Optional[WorkflowPayload] = None, query: Optional[str] = None) -> dict:
     """
     Triggers the compiled LangGraph multi-agent supervisor-router workflow.
+    Supports payload with 'query' or 'message'.
     """
-    active_query = (payload.query if payload and payload.query else None) or query or "What are the rules for exam attendance and where is the placement cell?"
+    active_query = (payload.query if payload and payload.query else None) or (payload.message if payload and payload.message else None) or query or "What are the rules for exam attendance and where is the placement cell?"
     try:
         inputs = {"messages": [HumanMessage(content=active_query)]}
         output = workflow.invoke(inputs)
