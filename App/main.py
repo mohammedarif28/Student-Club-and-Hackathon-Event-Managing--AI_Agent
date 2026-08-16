@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import Optional
 from langchain_core.messages import HumanMessage
 from langchain_community.vectorstores import Chroma
+from App.workflows.workflow import workflow
 
 app = FastAPI(
     title="Interactive Campus Info AI Agent",
@@ -13,7 +14,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Allows all origins for local development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -75,11 +76,31 @@ def delete_all_item() -> dict:
 # Multi-Agent Workflow & Interactive Chat Execution Endpoint
 # -----------------------------------------------------
 
+class ChatRequest(BaseModel):
+    message: str
+    query: Optional[str] = None
+
 class WorkflowPayload(BaseModel):
     query: Optional[str] = None
     message: Optional[str] = None
 
 @app.post("/api/chat")
+async def chat_endpoint(request: ChatRequest):
+    # Get message from frontend request
+    user_query = request.message or request.query
+    if not user_query:
+        return {"result": "No message provided."}
+    
+    try:
+        # Invoke your LangGraph multi-agent workflow
+        inputs = {"messages": [HumanMessage(content=user_query)]}
+        output = workflow.invoke(inputs)
+        final_response = output["messages"][-1].content
+        
+        return {"result": final_response}
+    except Exception as e:
+        return {"result": f"Error executing workflow: {str(e)}"}
+
 @app.post("/execute-workflow")
 def process_workflow(payload: Optional[WorkflowPayload] = None, query: Optional[str] = None) -> dict:
     """
