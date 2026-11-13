@@ -2,6 +2,7 @@ fastapi
 uvicorn[standard]
 langchain
 langgraph
+langchain-community
 langchain-groq
 google-genai
 groq
